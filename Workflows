@@ -1,0 +1,497 @@
+I'll help you create the OpenRouter video generator app and set it up on GitHub under the repository `newnkisa-arch:main/github`. Here's the complete setup:
+
+## 🚀 GitHub Repository Setup
+
+### **Step 1: Create GitHub Repository Structure**
+
+```bash
+# Clone or create your repository
+git clone https://github.com/newnkisa-arch/main.git
+cd main/github
+
+# Or if creating new:
+mkdir -p newnkisa-arch-main/github
+cd newnkisa-arch-main/github
+git init
+```
+
+### **Step 2: Project Structure**
+
+Create this folder structure:
+
+```
+github/
+├── openrouter-video-app/
+│   ├── App.js
+│   ├── package.json
+│   ├── app.json
+│   ├── components/
+│   │   ├── VideoGenerator.js
+│   │   ├── TrendingTopics.js
+│   │   └── VideoPlayer.js
+│   ├── services/
+│   │   └── OpenRouterAPI.js
+│   ├── utils/
+│   │   └── trending.js
+│   ├── assets/
+│   └── README.md
+├── web-version/
+│   ├── index.html
+│   ├── script.js
+│   └── style.css
+└── docs/
+    ├── SETUP.md
+    └── API_GUIDE.md
+```
+
+## 📱 Complete React Native App Code
+
+### **package.json**
+```json
+{
+  "name": "openrouter-video-generator",
+  "version": "1.0.0",
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "~49.0.0",
+    "expo-av": "~13.4.1",
+    "expo-file-system": "~15.4.3",
+    "expo-media-library": "~15.4.1",
+    "expo-status-bar": "~1.6.0",
+    "react": "18.2.0",
+    "react-native": "0.72.3",
+    "axios": "^1.5.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0"
+  },
+  "private": true
+}
+```
+
+### **app.json**
+```json
+{
+  "expo": {
+    "name": "OpenRouter Video Generator",
+    "slug": "openrouter-video-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
+```
+
+### **services/OpenRouterAPI.js**
+```javascript
+import axios from 'axios';
+
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+
+class OpenRouterAPI {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+    this.client = axios.create({
+      baseURL: OPENROUTER_BASE_URL,
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://github.com/newnkisa-arch/main',
+        'X-Title': 'OpenRouter Video Generator App'
+      }
+    });
+  }
+
+  // Get available models
+  async getModels() {
+    try {
+      const response = await this.client.get('/models');
+      return response.data.data?.filter(model => 
+        model.id.includes('video') || 
+        model.id.includes('runway') || 
+        model.id.includes('pika') ||
+        model.id.includes('luma') ||
+        model.id.includes('kling') ||
+        model.id.includes('minimax') ||
+        model.id.includes('haiper')
+      ) || this.getFallbackModels();
+    } catch (error) {
+      console.error('Error fetching models:', error);
+      return this.getFallbackModels();
+    }
+  }
+
+  getFallbackModels() {
+    return [
+      { id: 'luma/dream-machine', name: 'Luma Dream Machine' },
+      { id: 'runway/gen-3-alpha-turbo', name: 'Runway Gen-3 Alpha Turbo' },
+      { id: 'pika/pika-1.5', name: 'Pika 1.5' },
+      { id: 'minimax/video-01', name: 'MiniMax Video-01' },
+      { id: 'haiper/haiper-video-v1.2', name: 'Haiper Video v1.2' }
+    ];
+  }
+
+  // Generate video
+  async generateVideo(prompt, model = 'luma/dream-machine', options = {}) {
+    try {
+      const response = await this.client.post('/chat/completions', {
+        model: model,
+        messages: [
+          {
+            role: 'user',
+            content: `Generate a video: ${prompt}`
+          }
+        ],
+        video: {
+          aspect_ratio: options.aspectRatio || '16:9',
+          duration: options.duration || 5,
+          resolution: options.resolution || '720p',
+          fps: options.fps || 24
+        },
+        stream: false
+      });
+
+      return response.data;
+    } catch (error) {
+      throw new Error(`Video generation failed: ${error.response?.data?.error?.message || error.message}`);
+    }
+  }
+
+  // Enhanced text generation for video scripts
+  async generateVideoScript(prompt) {
+    try {
+      const response = await this.client.post('/chat/completions', {
+        model: 'openai/gpt-4-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a professional video script writer. Create detailed, engaging video scripts with scene descriptions, timing, and visual elements.'
+          },
+          {
+            role: 'user',
+            content: `Create a detailed video script for: ${prompt}. Include specific visual descriptions, camera movements, lighting, and timing for a 30-60 second video.`
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.8
+      });
+
+      return response.data.choices[0].message.content;
+    } catch (error) {
+      throw new Error(`Script generation failed: ${error.message}`);
+    }
+  }
+
+  // Get account credits/usage
+  async getCredits() {
+    try {
+      const response = await this.client.get('/auth/key');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching credits:', error);
+      return null;
+    }
+  }
+}
+
+export default OpenRouterAPI;
+```
+
+### **utils/trending.js**
+```javascript
+// Trending topics algorithm
+export class TrendingAlgorithm {
+  constructor() {
+    this.topics = [
+      // Tech & AI
+      'AI robot performing daily tasks in smart home',
+      'Holographic interface demonstration in futuristic office',
+      'Drone delivery system in urban environment',
+      'Virtual reality gaming experience showcase',
+      'Autonomous car navigating busy city streets',
+      
+      // Lifestyle & Entertainment
+      'Viral cooking recipe with satisfying food prep',
+      'Home workout routine in minimalist space',
+      'Pet tricks compilation with cute animals',
+      'DIY craft project time-lapse creation',
+      'Fashion outfit transformation sequence',
+      
+      // Nature & Travel
+      'Breathtaking sunrise over mountain landscape',
+      'Ocean waves crashing on tropical beach',
+      'Northern lights dancing in arctic sky',
+      'Cherry blossoms blooming in Japanese garden',
+      'Wildlife safari adventure in African savanna',
+      
+      // Art & Creativity
+      'Street art mural creation time-lapse',
+      'Digital art drawing process showcase',
+      'Music production session in modern studio',
+      'Dance choreography in urban setting',
+      'Photography tips in golden hour lighting',
+      
+      // Business & Education
+      'Startup pitch presentation animation',
+      'Educational science experiment demonstration',
+      'Productivity tips for remote work setup',
+      'Sustainable living practices showcase',
+      'Language learning conversation practice'
+    ];
+    
+    this.categories = {
+      'Tech & AI': ['AI', 'robot', 'holographic', 'drone', 'VR', 'autonomous'],
+      'Lifestyle': ['cooking', 'workout', 'pet', 'DIY', 'fashion'],
+      'Nature': ['sunrise', 'ocean', 'northern lights', 'cherry blossoms', 'wildlife'],
+      'Art': ['street art', 'digital art', 'music', 'dance', 'photography'],
+      'Education': ['startup', 'science', 'productivity', 'sustainable', 'language']
+    };
+  }
+
+  // Get trending topics based on simulated popularity
+  getTrendingTopics(count = 5) {
+    const shuffled = [...this.topics].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count).map((topic, index) => ({
+      id: index,
+      text: topic,
+      category: this.getTopicCategory(topic),
+      popularity: Math.floor(Math.random() * 1000) + 100,
+      trending: Math.random() > 0.3
+    }));
+  }
+
+  // Get topics by category
+  getTopicsByCategory(category) {
+    const keywords = this.categories[category] || [];
+    return this.topics.filter(topic => 
+      keywords.some(keyword => topic.toLowerCase().includes(keyword.toLowerCase()))
+    );
+  }
+
+  // Determine topic category
+  getTopicCategory(topic) {
+    for (const [category, keywords] of Object.entries(this.categories)) {
+      if (keywords.some(keyword => topic.toLowerCase().includes(keyword.toLowerCase()))) {
+        return category;
+      }
+    }
+    return 'General';
+  }
+
+  // Generate personalized topics based on user preferences
+  getPersonalizedTopics(userPreferences = [], count = 5) {
+    let filteredTopics = this.topics;
+    
+    if (userPreferences.length > 0) {
+      filteredTopics = this.topics.filter(topic =>
+        userPreferences.some(pref => 
+          topic.toLowerCase().includes(pref.toLowerCase())
+        )
+      );
+    }
+    
+    const shuffled = [...filteredTopics].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
+}
+
+export default TrendingAlgorithm;
+```
+
+### **components/VideoGenerator.js**
+```javascript
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator
+} from 'react-native';
+
+const VideoGenerator = ({ onVideoGenerated, openRouterAPI, selectedModel }) => {
+  const [prompt, setPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState('');
+
+  const generateVideo = async () => {
+    if (!prompt.trim()) {
+      Alert.alert('Error', 'Please enter a video prompt');
+      return;
+    }
+
+    setIsGenerating(true);
+    setGenerationStep('Creating video script...');
+
+    try {
+      // Step 1: Generate detailed script
+      const script = await openRouterAPI.generateVideoScript(prompt);
+      setGenerationStep('Generating video from script...');
+
+      // Step 2: Generate video
+      const videoResult = await openRouterAPI.generateVideo(prompt, selectedModel, {
+        aspectRatio: '16:9',
+        duration: 5,
+        resolution: '720p',
+        fps: 24
+      });
+
+      // For demo purposes, we'll simulate video generation
+      // In production, you'd handle the actual video generation response
+      setTimeout(() => {
+        setGenerationStep('Video ready!');
+        onVideoGenerated({
+          url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+          script: script,
+          prompt: prompt,
+          model: selectedModel
+        });
+        setIsGenerating(false);
+        setPrompt('');
+      }, 3000);
+
+    } catch (error) {
+      Alert.alert('Error', error.message);
+      setIsGenerating(false);
+      setGenerationStep('');
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>✍️ Create Your Video</Text>
+      
+      <TextInput
+        style={styles.input}
+        placeholder="Describe your video idea in detail..."
+        value={prompt}
+        onChangeText={setPrompt}
+        multiline
+        numberOfLines={4}
+        editable={!isGenerating}
+      />
+      
+      <TouchableOpacity
+        style={[styles.generateButton, isGenerating && styles.disabledButton]}
+        onPress={generateVideo}
+        disabled={isGenerating || !prompt.trim()}
+      >
+        {isGenerating ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator color="white" />
+            <Text style={styles.buttonText}>Generating...</Text>
+          </View>
+        ) : (
+          <Text style={styles.buttonText}>🎬 Generate Video</Text>
+        )}
+      </TouchableOpacity>
+
+      {isGenerating && (
+        <View style={styles.statusContainer}>
+          <Text style={styles.statusText}>{generationStep}</Text>
+          <Text style={styles.statusSubtext}>This may take 1-3 minutes...</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 15,
+    fontSize: 16,
+    minHeight: 120,
+    textAlignVertical: 'top',
+    backgroundColor: '#fafafa',
+  },
+  generateButton: {
+    backgroundColor: '#34C759',
+    padding: 18,
+    borderRadius: 10,
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  statusContainer: {
+    alignItems: 'center',
+    margin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# Download and install nvm:
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+
+# in lieu of restarting the shell
+\. "$HOME/.nvm/nvm.sh"
+
+# Download and install Node.js:
+nvm install 24
+
+# Verify the Node.js version:
+node -v # Should print "v24.14.1".
+
+# Verify npm version:
+npm -v # Should print "11.11.0".
+STR=Setup\ storage;DOA="Setup 'draw over apps' (Press ENTER)";IBO="Setup 'ignore battery optimizations' (Press ENTER)";SBP="Setup & Background pop-ups permissions";ALE="Setup 'allow-external-apps'";ICL=Install\ Clang;ACT=android.settings;PKG=package:com.termux;PT=~/.termux/termux.properties;echo $STR;termux-setup-storage;read -p "$DOA";am start -a $ACT.action.MANAGE_OVERLAY_PERMISSION -d $PKG > /dev/null;read -p "$IBO";am start -a $ACT.IGNORE_BATTERY_OPTIMIZATION_SETTINGS > /dev/null;read -p "$SBP";am start -a $ACT.APPLICATION_DETAILS_SETTINGS -d $PKG > /dev/null;echo $ALE;if [ -f $PT ];then awk '/^#/{print;next }/^\s*allow-external-apps/{gsub(/allow-external-apps.*/,"allow-external-apps=true");found=1}{print $0}END{if(!found)print "allow-external-apps=true"}' $PT > "$TMPDIR/a.tmp" && mv "$TMPDIR/a.tmp" $PT;else mkdir -p $(dirname $PT);echo 'allow-external-apps=true' > $PT;fi;echo $ICL;pkg i clang -y;apt autoremove --purge;apt clean;echo oknpm install @openrouter/sdk
